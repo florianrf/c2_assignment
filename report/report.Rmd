@@ -14,15 +14,16 @@ author:
 bibliography: sigproc.bib
 output: rticles::acm_article
 ---
-test
 
 ```{r setup, include=FALSE}
-import::from(lmerTest, lmer, anova)
+# import::from(lmerTest, lmer, anova)
 import::from(car, qqPlot)
 import::from(multcomp, glht, mcp)
 import::from(broom, tidy)
 import::from(modelr, add_residuals, gather_residuals)
 import::from(ggpubr, theme_pubclean)
+import::from(nortest, lillie.test)
+import::from(lawstat, levene.test)
 library(tidyverse)
 ```
 
@@ -36,58 +37,78 @@ tibble(x = rnorm(30), y = rnorm(30)) %>%
   theme_pubclean(base_size = 18)
 ```
 
-In the `{r setup ...}` chunk above (only visible in the source code), we also use `import::from` to selectively import functions from the packages. 
-This prevents functions of similar names from crashing with each other.
-To use `import::from`, you'll need to install the `import` package.
-
-You may want to selectively hide some code chunks with `echo=FALSE` (Show only output) or `include=FALSE` (Show nothing, but run code)
 
 ```{r include=FALSE}
+#Format number
 test_value <- 1.23456
 format_num <- function(nums, sigdigits = 3) gsub("\\.$", "", formatC(nums, sigdigits, format = "fg", flag="#"))
 ```
-Sometimes, you can easily format the number with decimal points using the `format_num()` provided in code, such as this: `r format_num(test_value)`.
-However, at other times (e.g., $p$ < .001), formatting would be easier if you just type in the number.
 
-The footer on the bottom-left of the page is determined in the template. 
-Don't bother wrestling with it.
-
-Please remove the instruction sections from your submission.
-
-Change the title of the submission to a short clause that highlight your findings.
-
-## Dataset
-
-Each group will use a unique subset of data from the given dataset. 
-Use the following code block (visible in the source code) to set `group_seed` and generate `my_data`  to generate the dataset for your group.
+## Data Analysis
 
 ```{r include=FALSE}
-matriculation_nos <- c(12345678, 12345678)  # replace 12345678 with matriculation number of each team member
+# matriculation_nos <- c(11746625, 11611985, 13718143)
 
 # load the  whole dataset
-sim_data <- readRDS("../data/sim_data.RDS")
+# sim_data <- readRDS("../data/sim_data.RDS")
 
 # set randomization seed
-group_seed <- mean(matriculation_nos) %% 28
-set.seed(group_seed)
+# group_seed <- mean(matriculation_nos) %% 28
+# set.seed(group_seed)
 
 # randomly sample some participants out of the given dataset
-my_data <- 
-  sim_data %>% 
-  filter(Participant %in% sample(as.character(unique(sim_data$Participant)), 15))
+#my_data <- 
+ # sim_data %>% 
+  # filter(Participant %in% sample(as.character(unique(sim_data$Participant)), 15))
 
 # To ensure that your dataset doesn't change, run the code above only once.
 # Afterwards, save and load data with the following command
-# saveRDS(my_data, file = "../data/my_data.RDS")
-# my_data <- readRDS("../data/my_data.RDS")
+saveRDS(my_data, file = "../data/my_data.RDS")
+data <- readRDS("../data/my_data.RDS")
 ```
 
+# Visualize data
+```{r echo=FALSE}
+p_base <-
+  data %>%
+  ggplot(aes(x = Condition, y = TP_bps)) +
+  geom_violin() +
+  geom_point(color = "lightgray")
+
+p_base
+```
+
+# Explore assupmtion for the subset of data
+## Normality
+```{r echo=FALSE}
+par(mfrow = c(1,4)) #plot four plots next to each other
+data %>%
+  group_by(Condition) %>%
+  do({
+    qqPlot(.$TP_bps)
+    title(main=.$Condition[[1]])
+    tidy(lillie.test(.$TP_bps))
+  })
+par(mfrow = c(1,1)) # sets back the default
+
+```
+
+Interpretation: The normality assumption does not hold for the subset of the data. The null hypothesis is that the data is normally distributed. Since the p-value is very small (< 0.05), we can reject this null hypothesis and cannot assume that the data is normally distributed. An exception has to be made for the condition Phone sway which is normally distributed (p = 0.17).
+
+## Homogeneity
+```{r echo=FALSE}
+levene.test(log(data$TP_bps), data$Condition, location = "median")
+
+```
+Interpretation: the null hypothesis is that the data have a constant variance. Since the p-value is very small, we can reject the hypothesis  and cannot assume that the variance is homogeneous.
 
 # Effect of input techniques
 __RQ1:__ To which extent does the choice of input techniques influence the pointing performance?
 
-Describe your claim, evidence and reasoning.
-Make sure to justify your choice of analysis methods.
+```{r include=FALSE}
+
+```
+
 
 
 # Learning effect
