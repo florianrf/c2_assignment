@@ -1,5 +1,5 @@
 ---
-title: "Our findings"
+title: "Quantitative HCI: Comparing Different Input Techniques"
 author:
   - name: Matthias Felix
     email: matthias.felix@uzh.ch
@@ -28,48 +28,40 @@ import::from(lawstat, levene.test)
 library(tidyverse)
 ```
 
-
-
-```{r, echo=FALSE, fig.height=2, fig.cap = "Example figure caption. \\label{fig:fig_example}"}
-tibble(x = rnorm(30), y = rnorm(30)) %>% 
-  ggplot(aes(x = x, y = y)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  theme_pubclean(base_size = 18)
-```
-
-
-```{r include=FALSE}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 #Format number
-test_value <- 1.23456
 format_num <- function(nums, sigdigits = 3) gsub("\\.$", "", formatC(nums, sigdigits, format = "fg", flag="#"))
 ```
 
-## Data Analysis
+# Dataset
 
-```{r include=FALSE}
-# matriculation_nos <- c(11746625, 11611985, 13718143)
+The dataset consists of a random sample of participants that is drawn from a larger dataset. It contains results of an experiment that was conducted to compare the performance of different input techniques (called conditions) in terms of speed and accuracy of input. As dependent variable, Throughput is used because it is a measure that embeds both the speed and accuracy of responses (throughput is useful as a dependent variable in factorial experiments using pointing techniques or pointing devices as independent variables) (McKenzie 2012: 252).
 
-# load the  whole dataset
-# sim_data <- readRDS("../data/sim_data.RDS")
+In the following sections, two research questions are assessed using linear model regressions. The research questions are:
 
-# set randomization seed
-# group_seed <- mean(matriculation_nos) %% 28
-# set.seed(group_seed)
+RQ1: To which extent does the choice of input techniques influence the pointing performance?
 
-# randomly sample some participants out of the given dataset
-#my_data <- 
- # sim_data %>% 
-  # filter(Participant %in% sample(as.character(unique(sim_data$Participant)), 15))
-
-# To ensure that your dataset doesn't change, run the code above only once.
-# Afterwards, save and load data with the following command
-saveRDS(my_data, file = "../data/my_data.RDS")
+RQ2: To which extent does the learning effect influence the pointing performance?
+```{r message=FALSE, warning=FALSE, include=FALSE}
+#  matriculation_nos <- c(11746625, 11611985, 13718143)
+# 
+# # load the  whole dataset
+#  sim_data <- readRDS("../data/sim_data.RDS")
+# 
+# # set randomization seed
+#  group_seed <- mean(matriculation_nos) %% 28
+#  set.seed(group_seed)
+# 
+# # randomly sample some participants out of the given dataset
+# my_data <-
+#   sim_data %>%
+#    filter(Participant %in% sample(as.character(unique(sim_data$Participant)), 15))
+# 
+# # To ensure that your dataset doesn't change, run the code above only once.
+# # Afterwards, save and load data with the following command
+#  saveRDS(my_data, file = "../data/my_data.RDS")
 data <- readRDS("../data/my_data.RDS")
-```
 
-# Visualize data
-```{r echo=FALSE}
 p_base <-
   data %>%
   ggplot(aes(x = Condition, y = TP_bps)) +
@@ -79,9 +71,8 @@ p_base <-
 p_base
 ```
 
-# Explore assupmtion for the subset of data
-## Normality
-```{r echo=FALSE}
+## Normality Assumption
+```{r message=FALSE, warning=FALSE, include=FALSE, fig.cap = "QQ Plots for each Condition (original data) \\label{fig:qqplot_by_condition}"}
 par(mfrow = c(1,4)) #plot four plots next to each other
 data %>%
   group_by(Condition) %>%
@@ -91,46 +82,44 @@ data %>%
     tidy(lillie.test(.$TP_bps))
   })
 par(mfrow = c(1,1)) # sets back the default
-
 ```
 
-Interpretation: The normality assumption does not hold for the subset of the data. The null hypothesis is that the data is normally distributed. Since the p-value is very small (< 0.05), we can reject this null hypothesis and cannot assume that the data is normally distributed. An exception has to be made for the condition Phone sway which is normally distributed (p = 0.17).
+**Interpretation:** The normality assumption does not hold for the subset of the data. The null hypothesis is that the data is normally distributed. Since the p-values are very small (< 0.05), we can reject this null hypothesis and cannot assume that the data is normally distributed. The QQ plots in figure \ref{fig:qqplot_by_condition} confirm this finding. An exception has to be made for the Phone_Sway condition which is normally distributed (p = 0.17).
 
-## Homogeneity
-```{r echo=FALSE}
+## Homogeneity Assumption
+```{r message=FALSE, warning=FALSE, include=FALSE}
 levene.test(data$TP_bps, data$Condition, location = "median")
 ```
-Interpretation: the null hypothesis is that the data have a constant variance. Since the p-value is very small, we can reject the hypothesis  and cannot assume that the variance is homogeneous.
+**Interpretation:** The null hypothesis is that the data have a constant variance. Since the p-value yielded by the conducted Levene Test is very small (<0.05), we can reject the hypothesis and cannot assume that the variance is homogeneous.
 
-# Transformation
-We perform a logarithmic transformation on the data and test the normality and homogeneity assumption again.
+## Transformation
+Due to the above described findings, we perform a logarithmic transformation on the data and test the normality and homogeneity assumption again.
 
-## Normality
-```{r echo=FALSE}
+## Normality Assumption after Logarithmic Transformation
+```{r message=FALSE, warning=FALSE, include=FALSE, fig.cap = "QQ Plots for each Condition (log-transformed data) \\label{fig:qqplot_by_condition_log}"}
 par(mfrow = c(1,4)) #plot four plots next to each other
 data %>%
   group_by(Condition) %>%
   do({
-    qqPlot(log(log(.$TP_bps + 2)))
+    qqPlot(log(.$TP_bps + 2))
     title(main=.$Condition[[1]])
-    tidy(lillie.test(log(log(.$TP_bps + 2))))
+    tidy(lillie.test(log(.$TP_bps + 2)))
   })
 par(mfrow = c(1,1)) # sets back the default
-
 ```
+**Interpretation:** The normality assumption does not hold either for the data after logarithmic transformation. The p-values are again very small (< 0.05) and we can reject the null hypothesis and assume that the data is not normally distributed. The QQ plots in figure \ref{fig:qqplot_by_condition_log} confirm this finding, this time for all four conditions.
 
-## Homogeneity
-```{r echo=FALSE}
+## Homogeneity Assumption after Logarithmic Transformation
+```{r message=FALSE, warning=FALSE, include=FALSE}
 levene.test(log(data$TP_bps), data$Condition, location = "median")
 ```
+**Interpretation:** The Homogeneity assumption is not confirmed either. The p-value of the Levene Test is again very small (<0.05), and we need to reject the hypothesis and cannot assume that the variance is homogeneous.
 
-
-
-# Effect of input techniques
+# Effect of Input Techniques
 __RQ1:__ To which extent does the choice of input techniques influence the pointing performance?
 
-## Categorical coding
-```{r include=FALSE}
+```{r message=FALSE, warning=FALSE, include=FALSE}
+## Categorical Coding
 # copy the Condition column to Condition2
 data <- 
   data %>% 
@@ -138,63 +127,66 @@ data <-
 
 # change its coding scheme
 contrasts(data$Condition2) <- contr.sum(length(levels(data$Condition2)))
-
 ```
 
-## Fit the linear model
-
-```{r include=FALSE}
+## Fit the Linear Model
+```{r message=FALSE, warning=FALSE, include=FALSE}
 model_org <- lm(TP_bps ~ Condition2, data) # original data
 summary(model_org)
-model_log <- lm(log(TP_bps + 2) ~ Condition2, data) # original data
+model_log <- lm(log(TP_bps + 2) ~ Condition2, data) # log data
 summary(model_log)
-
 ```
 
-## Test assumption on model residuals (original data)
-```{r echo=FALSE}
+Fitting the linear model reveals that all conditions have a negative interaction effect on throughput. The p-values are below 0.05, with negative interaction effects between -0.34 and -0.61.
+
+## Normality Assumption of Model Residuals (original data)
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "QQ plot of model residuals (original data) \\label{fig:qq_plot_residuals}"}
 # Normality of model residuals on original data
 data_aug <- data %>% add_residuals(model_org)
 qqPlot(data_aug$resid)
-tidy(lillie.test(data_aug$resid))
+# tidy(lillie.test(data_aug$resid))
 rm(data_aug)
-
 ```
 
-```{r echo=FALSE}
+The normality assumption does not hold for the residuals of the data either. The QQ plot in \ref{fig:qq_plot_residuals} shows that the data points are not within the blue lines, indicating clearly that the residuals are not normally distributed. This also holds for the log-transformed data.
+
+## Homogeneity of Model Residuals (original data)
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 # Homogeniety of model residuals on original data
 ncvTest(model_org)
 ```
-
-## Test assumption on model residuals (log data)
-```{r echo=FALSE}
-# Normality of model residuals on log data
-data_aug <- data %>% add_residuals(model_log)
-qqPlot(data_aug$resid)
-tidy(lillie.test(data_aug$resid))
-rm(data_aug)
-```
-
-```{r echo=FALSE}
+## Homogeneity of Model Residuals (log-transformed data)
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 # Homogeniety of model residuals on log data
 ncvTest(model_log)
 ```
 
+The Non-constant Variance Score Test shows a high p-value, meaning that we cannot assume that the  variance is not homogeneous. However, this is not true for the log-transformed data, in that test the very low p-value (below 0.05) means that we can reject the null hypothesis and assume non-homogeneity.
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+## Test assumption on model residuals (log data)
+
+# Normality of model residuals on log data
+data_aug <- data %>% add_residuals(model_log)
+qqPlot(data_aug$resid)
+# tidy(lillie.test(data_aug$resid))
+rm(data_aug)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
 ## Model with random intercept
-```{r include=FALSE}
 model_lmer <- lmer(TP_bps ~ (1|Participant) + Condition2, data) 
 summary(model_lmer)
 ```
 
-## Analysis of variance (ANOVA)
-```{r include=FALSE}
-Anova(model_lmer)
 
+```{r message=FALSE, warning=FALSE, include=FALSE}
+## Analysis of variance (ANOVA)
+Anova(model_lmer)
 ```
 
-# Generalized linear hypothesis
-## Pairwise comparison
-```{r include=FALSE}
+## Generalized Linear Hypothesis - Pairwise Comparison
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "Pairwise Comparison of Conditions. \\label{fig:pairwise_comparison}"}
 pairwise_org <- glht(model_lmer, linfct = mcp(Condition2 = "Tukey"))
 ci_pairwise_org <- tidy(confint(pairwise_org))
 pairwise_org <-
@@ -205,39 +197,45 @@ pairwise_org <-
   xlab("hypothesis") +
   ylab("throughput") +
   coord_flip()
+pairwise_org
 ```
 
+The pairwise comparison of figure \ref{fig:pairwise_comparison} shows that trackpad has a significantly higher throughput than the other conditions, while the other 3 conditions all have a very similar throughput.
 
 # Learning effect
-__RQ2:__ To which extent does the learning effect influences the pointing performance?
+__RQ2:__ To which extent does the learning effect influence the pointing performance?
 
 ## Fit the linear model
 
-```{r include=FALSE}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 model2_org <- lm(TP_bps ~ Block, data) # original data
 summary(model2_org)
-model2_log <- lm(log(TP_bps + 2) ~ Block, data) # original data
+model2_log <- lm(log(TP_bps + 2) ~ Block, data) # log data
 summary(model2_log)
-
 ```
 
+Fitting the linear model reveals that the blocks have a positive interaction effect on throughput. The p-values are all below 0.05, with positive interaction effects between 0.05 and 0.11, indicating a small learning effect.
+
 ## Test assumption on model residuals (original data)
-```{r echo=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "QQ plot of model residuals \\label{fig:qq_plot_residuals_2}"}
 # Normality of model residuals on original data
 data_aug <- data %>% add_residuals(model2_org)
 qqPlot(data_aug$resid)
-tidy(lillie.test(data_aug$resid))
+# tidy(lillie.test(data_aug$resid))
 rm(data_aug)
 
 ```
+The normality assumption does not hold for the residuals of the data. The QQ plot shows that the data points are not within the blue lines, indicating clearly that the residuals are not normally distributed. This also holds for the log-transformed data.
 
-```{r echo=FALSE}
-# Homogeniety of model residuals on original data
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+# Homogeneity of model residuals on original data
 ncvTest(model2_org)
 ```
 
+The Non-constant Variance Score Test shows a high p-value, meaning that we cannot assume that the  variance is not homogeneous. The same is true for the log-transformed data.
+
 ## Test assumption on model residuals (log data)
-```{r echo=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "QQ plot of model residuals (log data) \\label{fig:qq_plot_residuals_log_2}"}
 # Normality of model residuals on log data
 data_aug <- data %>% add_residuals(model2_log)
 qqPlot(data_aug$resid)
@@ -245,25 +243,25 @@ tidy(lillie.test(data_aug$resid))
 rm(data_aug)
 ```
 
-```{r echo=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 # Homogeniety of model residuals on log data
 ncvTest(model2_log)
 ```
 
 ## Model with random intercept
-```{r include=FALSE}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 model2_lmer <- lmer(TP_bps ~ (1|Participant) + Block, data) 
 summary(model2_lmer)
 ```
 
 ## Analysis of variance (ANOVA)
-```{r include=FALSE}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 Anova(model2_lmer)
 ```
 
 # Generalized linear hypothesis
 ## Pairwise comparison
-```{r include=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "Pairwise comparison of blocks \\label{fig:pairwise_comparison_blocks}"}
 pairwise_org <- glht(model2_lmer, linfct = mcp(Block = "Tukey"))
 ci_pairwise_org <- tidy(confint(pairwise_org))
 pairwise_org <-
@@ -274,17 +272,18 @@ pairwise_org <-
   xlab("hypothesis") +
   ylab("throughput") +
   coord_flip()
+pairwise_org
 ```
 
+Finally, the pairwise comparison of figure \ref{fig:pairwise_comparison_blocks} shows that higher blocks generally have a higher throughput than lower ones, and that the difference is largest for comaprisons with block 1. This confirms that the biggest learning effect is present between block 1 and 2.
+
 # Conclusion
-In this section, you will write about what you learned by drawing from both RQ1 and RQ2
 
+Our analysis with linear models helped us to better understand research questions 1 and 2. It showed that the conditions have a significant interaction effect on the poining performance and that trackpad proved to be the best pointing technique among the four tested techniques, while the other three (thumb, index finger and sway mode) performed similarly well. The analysis for research question two also showed that there is a small learning effect, meaning that participants' pointing performance improved in subsequent blocks, especially in the first few blocks with the effect decreasing over time.
 
-(For grading `group_seed`: (write down the number of your `group_seed` here))
-
+(For grading `group_seed`: 25.66667)
 
 
 # References
 
-
-
+MacKenzie, I.S. 2012. Human-computer interaction: An empirical research perspective. Newnes.
